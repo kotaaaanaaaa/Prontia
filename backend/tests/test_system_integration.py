@@ -9,11 +9,74 @@ async def test_new_conversation() -> None:
         user='test_user',
         content='hello',
     )
-    assert res.user_id == "test_user"
     assert res.id is not None
     assert res.conversation_id is not None
     assert res.role == 'assistant'
     assert res.content is not None
+
+
+@pytest.mark.asyncio
+async def test_conversation_history() -> None:
+    msg1 = await target.start_conversation(
+        user='test_user',
+        content='hello',
+    )
+    msg2 = await target.start_conversation(
+        user='test_user',
+        content='hello',
+    )
+
+    convs = await target.get_history(
+        user='test_user',
+    )
+    res = [conv.id for conv in convs]
+    assert msg1.conversation_id in res
+    assert msg2.conversation_id in res
+
+
+@pytest.mark.asyncio
+async def test_get_conversation() -> None:
+    msg = await target.start_conversation(
+        user='test_user',
+        content='hello',
+    )
+    res = await target.get_conversation(
+        user='test_user',
+        id=msg.conversation_id,
+    )
+    assert res.id is not None
+    assert res.title is not None
+
+
+@pytest.mark.asyncio
+async def test_delete_conversation() -> None:
+    msg = await target.start_conversation(
+        user='test_user',
+        content='hello',
+    )
+    await target.delete_conversation(
+        user='test_user',
+        id=msg.conversation_id,
+    )
+
+    with pytest.raises(Exception):
+        await target.get_conversation(
+            user='test_user',
+            id=msg.conversation_id,
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_conversation_messages() -> None:
+    msg = await target.start_conversation(
+        user='test_user',
+        content='hello',
+    )
+    res = await target.get_conversation_messages(
+        user='test_user',
+        id=msg.conversation_id,
+    )
+    assert len(res) >= 1
 
 
 @pytest.mark.asyncio

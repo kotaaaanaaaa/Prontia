@@ -11,7 +11,7 @@ router = APIRouter(prefix='/conversations')
 
 
 @router.get('/')
-async def get_histories(
+async def get_history(
     user=Depends(get_user),
 ) -> List[ConversationResponse]:
     '''
@@ -24,7 +24,7 @@ async def get_histories(
     for conv in convs:
         results.append(
             ConversationResponse(
-                id=conv.conversation_id,
+                id=conv.id,
                 title=conv.title,
             )
         )
@@ -54,15 +54,14 @@ async def get_conversation(
 async def delete_conversation(
     id: str,
     user=Depends(get_user),
-):
+) -> None:
     '''
 
     '''
     srv_conv.delete_conversation(
         user_id=user,
-        conversation_id=id,
+        id=id,
     )
-    return
 
 
 @router.get('/{id}/messages/')
@@ -81,7 +80,7 @@ async def get_conversation_messages(
     for msg in msgs:
         results.append(
             MessageResponse(
-                id=msg.message_id,
+                id=msg.id,
                 conversation_id=msg.conversation_id,
                 role=msg.role,
                 content=msg.content,
@@ -94,7 +93,7 @@ async def get_conversation_messages(
 async def start_conversation(
     content: str,
     user=Depends(get_user),
-):
+) -> MessageResponse:
     '''
 
     '''
@@ -107,10 +106,16 @@ async def start_conversation(
         content=content,
     )
 
-    result = await srv_conv.send_message(
+    res = await srv_conv.send_message(
         user_id=user,
         conversation_id=conv.id,
         message=msg,
+    )
+    result = MessageResponse(
+        id=res.id,
+        conversation_id=res.conversation_id,
+        role=res.role,
+        content=res.content,
     )
     return result
 
@@ -120,7 +125,7 @@ async def send_question(
     id: str,
     content: str,
     user=Depends(get_user),
-):
+) -> MessageResponse:
     '''
 
     '''
@@ -134,10 +139,16 @@ async def send_question(
         content=content,
     )
 
-    result = await srv_conv.send_message(
+    res = await srv_conv.send_message(
         user_id=user,
         conversation_id=id,
         message=msg,
         history=history
+    )
+    result = MessageResponse(
+        id=res.id,
+        conversation_id=res.conversation_id,
+        role=res.role,
+        content=res.content,
     )
     return result

@@ -33,7 +33,7 @@ async def get_conversation(
 ) -> Conversation:
     conv = await db.get_conversation(
         user_id=user_id,
-        conversation_id=id,
+        id=id,
     )
     return conv
 
@@ -45,7 +45,7 @@ async def update_conversation_title(
 ):
     conv = await db.get_conversation(
         user_id=user_id,
-        conversation_id=id,
+        id=id,
     )
     conv.title = title
     conv = await db.upsert_conversation(
@@ -60,7 +60,7 @@ async def delete_conversation(
 ) -> None:
     await db.delete_conversation(
         user_id=user_id,
-        conversation_id=id,
+        id=id,
     )
     await db.delete_messages(
         user_id=user_id,

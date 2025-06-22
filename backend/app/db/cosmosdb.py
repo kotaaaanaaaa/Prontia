@@ -176,7 +176,7 @@ async def get_conversation(
 
 async def delete_conversation(
         user_id: str,
-        conversation_id: str,
+        id: str,
 ) -> None:
     '''
 
@@ -188,7 +188,7 @@ async def delete_conversation(
             container_name='conversations'
         )
         await container.delete_item(
-            item=conversation_id,
+            item=id,
             partition_key=user_id,
         )
         await __close_client(client=client)
