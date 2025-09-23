@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "FastAPI",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "prontia.app:app",
+        "--reload"
+      ],
+      "jinja": true,
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/src",
+    },
+    {
+      "name": "Module",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "prontia",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/src",
+    },
+    {
+      "name": "Direct",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/prontia/__main__.py",
+      "console": "integratedTerminal",
+    },
+  ]
+}
