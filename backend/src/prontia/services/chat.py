@@ -20,7 +20,7 @@ from prontia.services.openai import (
 )
 
 
-async def get_hiostories(
+async def get_histories(
     owner_id: str,
 ) -> List[ConversationResponse]:
     convs = await db.get_conversations(

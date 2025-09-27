@@ -109,7 +109,7 @@ def conversation_2() -> Conversation:
 
 @pytest.mark.asyncio
 async def test_get_hiostories_1() -> None:
-    res = await target.get_hiostories(
+    res = await target.get_histories(
         owner_id=TEST_OWNER_ID,
     )
     assert len(res) == 0
@@ -119,7 +119,7 @@ async def test_get_hiostories_1() -> None:
 async def test_get_hiostories_2(
     conversation_1,
 ) -> None:
-    res = await target.get_hiostories(
+    res = await target.get_histories(
         owner_id=TEST_OWNER_ID,
     )
     assert len(res) == 1
