@@ -196,11 +196,11 @@ async def get_conversation(
 
 
 async def delete_conversation(
-    conv: Conversation,
+    converation: Conversation,
 ) -> None:
     await _delete_item(
-        item_id=conv.id,
-        partition_key=conv.owner_id,
+        item_id=converation.id,
+        partition_key=converation.owner_id,
         container_name=_CONVERSATION_CONTAINER_NAME,
         partition_path=_CONVERSATION_PARTITION_PATH,
     )
