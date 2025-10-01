@@ -1,17 +1,7 @@
-import asyncio
-from datetime import datetime
 import pytest
+from pytest_mock.plugin import MockerFixture as Mocker
 from uuid6 import uuid7
 
-import prontia.db.cosmosdb as db
-from prontia.dto.conversation import (
-    ConversationRequest,
-    UpdateConversationRequest,
-)
-from prontia.dto.message import (
-    CompletionMessageRequest,
-    MessageRequest,
-)
 from prontia.models.conversation import Conversation
 from prontia.models.message import Message
 
@@ -20,298 +10,482 @@ import prontia.services.chat as target
 from tests.test_const import TEST_OWNER_ID
 
 
-@pytest.fixture(
-    scope="function",
-    autouse=True,
-)
-def clear_container() -> None:
-    container_name = "conversations"
-    partition_path = "/owner_id"
-    query = "SELECT * FROM c WHERE c.owner_id=@owner_id"
-    parameters = [
-        dict(name="@owner_id", value=TEST_OWNER_ID),
-    ]
-
-    items = asyncio.run(
-        db._query_container(
-            name=container_name,
-            path=partition_path,
-            query=query,
-            parameters=parameters,
-        ),
-    )
-
-    for item in items:
-        asyncio.run(
-            db._delete_item(
-                item_id=item["id"],
-                partition_key=item["owner_id"],
-                container_name=container_name,
-                partition_path=partition_path,
-            ),
-        )
-
-
-@pytest.fixture
-def conversation_1() -> Conversation:
-    conv = Conversation(
-        id=str(uuid7()),
-        owner_id=TEST_OWNER_ID,
-        title=str(uuid7()),
-    )
-    res = asyncio.run(
-        db.upsert_conversation(
-            conversation=conv,
-        ),
-    )
-    return res
-
-
-@pytest.fixture
-def conversation_2() -> Conversation:
-    conv = Conversation(
-        id=str(uuid7()),
-        owner_id=TEST_OWNER_ID,
-        title=str(uuid7()),
-    )
-    asyncio.run(
-        db.upsert_conversation(
-            conversation=conv,
-        ),
-    )
-    msg1 = Message(
-        id=str(uuid7()),
-        owner_id=TEST_OWNER_ID,
-        conversation_id=conv.id,
-        role="user",
-        content=f"私のIDは {id} です。",
-    )
-    asyncio.run(
-        db.upsert_message(
-            message=msg1,
-        ),
-    )
-
-    msg2 = Message(
-        id=str(uuid7()),
-        owner_id=TEST_OWNER_ID,
-        conversation_id=conv.id,
-        role="assistant",
-        content="質問や問い合わせがあればお答えします。",
-    )
-    asyncio.run(
-        db.upsert_message(
-            message=msg2,
-        ),
-    )
-    return conv
-
-
 @pytest.mark.asyncio
-async def test_get_hiostories_1() -> None:
+async def test_get_hiostories_1(
+    mocker: Mocker,
+) -> None:
+    m = mocker.patch(
+        "prontia.db.cosmosdb.get_conversations",
+        return_value=[],
+    )
+
     res = await target.get_histories(
         owner_id=TEST_OWNER_ID,
     )
+
+    assert m.call_count == 1
+    m.assert_called_with(
+        owner_id=TEST_OWNER_ID,
+    )
+
     assert len(res) == 0
 
 
 @pytest.mark.asyncio
 async def test_get_hiostories_2(
-    conversation_1,
+    mocker: Mocker,
 ) -> None:
+    conv = Conversation(
+        id=str(uuid7()),
+        owner_id=TEST_OWNER_ID,
+        title=str(uuid7()),
+    )
+    m = mocker.patch(
+        "prontia.db.cosmosdb.get_conversations",
+        return_value=[conv],
+    )
+
     res = await target.get_histories(
         owner_id=TEST_OWNER_ID,
     )
+
+    assert m.call_count == 1
+    m.assert_called_with(
+        owner_id=TEST_OWNER_ID,
+    )
+
     assert len(res) == 1
-    assert res[0].id == conversation_1.id
-    assert res[0].title == conversation_1.title
+    assert res[0].id == conv.id
+    assert res[0].title == conv.title
 
 
 @pytest.mark.asyncio
-async def test_start_conversation() -> None:
-    req = CompletionMessageRequest(
-        content="こんにちは",
+async def test_get_hiostories_3(
+    mocker: Mocker,
+) -> None:
+    convs = [
+        Conversation(
+            id=str(uuid7()),
+            owner_id=TEST_OWNER_ID,
+            title=str(uuid7()),
+        ),
+        Conversation(
+            id=str(uuid7()),
+            owner_id=TEST_OWNER_ID,
+            title=str(uuid7()),
+        ),
+    ]
+    m = mocker.patch(
+        "prontia.db.cosmosdb.get_conversations",
+        return_value=convs,
     )
 
-    start_at = datetime.now()
-    res = await target.start_conversation(
+    res = await target.get_histories(
         owner_id=TEST_OWNER_ID,
-        request=req,
     )
-    end_at = datetime.now()
 
-    assert res.id is not None
-    assert res.conversation_id is not None
-    assert res.role == "assistant"
-    assert res.content != ""
-
-    conv = await db.get_conversation(
-        id=res.conversation_id,
+    assert m.call_count == 1
+    m.assert_called_with(
         owner_id=TEST_OWNER_ID,
     )
 
-    assert conv is not None
-    assert conv.id == res.conversation_id
-    assert conv.owner_id == TEST_OWNER_ID
-    assert conv.title is not None
-    assert conv.created_at is not None
-    assert conv.updated_at is not None
-    assert conv.deleted_at is None
-    assert conv.created_at == conv.updated_at
-    assert conv.created_at > start_at
-    assert conv.created_at < end_at
+    assert len(res) == 2
+    assert res[0].id == convs[0].id
+    assert res[0].title == convs[0].title
+    assert res[1].id == convs[1].id
+    assert res[1].title == convs[1].title
 
-    msgs = await db.get_messages(
+
+@pytest.mark.asyncio
+async def test_start_conversation_1(
+    mocker: Mocker,
+) -> None:
+    conv = Conversation(
+        id=str(uuid7()),
+        owner_id=TEST_OWNER_ID,
+        title=str(uuid7()),
+    )
+    msg = Message(
+        id=str(uuid7()),
         owner_id=TEST_OWNER_ID,
         conversation_id=conv.id,
+        role=str(uuid7()),
+        content=str(uuid7()),
+    )
+    content = "こんにちは"
+
+    m1 = mocker.patch(
+        "prontia.services.openai.generate_title",
+        return_value=content,
+    )
+    m2 = mocker.patch(
+        "prontia.db.cosmosdb.upsert_conversation",
+        return_value=conv,
+    )
+    m3 = mocker.patch(
+        "prontia.db.cosmosdb.upsert_message",
+        return_value=msg,
+    )
+    m4 = mocker.patch(
+        "prontia.services.openai.completion",
+        return_value=msg,
     )
 
-    assert len(msgs) == 2
-    assert msgs[0].id != res.id
-    assert msgs[0].conversation_id == res.conversation_id
-    assert msgs[0].role == "user"
-    assert msgs[0].content == req.content
-    assert msgs[0].created_at is not None
-    assert msgs[0].updated_at is not None
-    assert msgs[0].deleted_at is None
-    assert msgs[0].created_at == msgs[0].updated_at
-    assert msgs[0].created_at > start_at
-    assert msgs[0].created_at < end_at
-
-    assert msgs[1].id == res.id
-    assert msgs[1].conversation_id == res.conversation_id
-    assert msgs[1].role == res.role
-    assert msgs[1].content == res.content
-    assert msgs[1].created_at is not None
-    assert msgs[1].updated_at is not None
-    assert msgs[1].deleted_at is None
-    assert msgs[1].created_at == msgs[1].updated_at
-    assert msgs[1].created_at > start_at
-    assert msgs[1].created_at < end_at
-
-
-@pytest.mark.asyncio
-async def test_get_conversation(
-    conversation_1,
-) -> None:
-    req = ConversationRequest(
-        id=conversation_1.id,
-    )
-    res = await target.get_conversation(
+    res = await target.start_conversation(
         owner_id=TEST_OWNER_ID,
-        request=req,
+        content=content,
     )
 
-    assert res.id == conversation_1.id
-    assert res.title == conversation_1.title
+    assert m1.call_count == 1
+    m1.assert_called_with(
+        content=content,
+    )
+    assert m2.call_count == 1
+    _, m2_kwargs = m2.call_args
+    assert m2_kwargs["conversation"].owner_id == TEST_OWNER_ID
+    assert m2_kwargs["conversation"].title == content
+    assert m3.call_count == 2
+    m3_args = m3.call_args_list
+    _, m3_kwargs = m3_args[0]
+    assert m3_kwargs["message"].owner_id == TEST_OWNER_ID
+    assert m3_kwargs["message"].conversation_id == m2_kwargs["conversation"].id
+    assert m3_kwargs["message"].role == "user"
+    assert m3_kwargs["message"].content == content
+    _, m3_kwargs = m3_args[1]
+    assert m3_kwargs["message"].owner_id == msg.owner_id
+    assert m3_kwargs["message"].conversation_id == msg.conversation_id
+    assert m3_kwargs["message"].role == msg.role
+    assert m3_kwargs["message"].content == msg.content
+    assert m4.call_count == 1
+    _, m4_kwargs = m4.call_args
+    assert m4_kwargs["owner_id"] == TEST_OWNER_ID
+    assert m4_kwargs["conversation_id"] == m2_kwargs["conversation"].id
+    assert m4_kwargs["messages"].owner_id == TEST_OWNER_ID
+    assert m4_kwargs["messages"].conversation_id == m2_kwargs["conversation"].id
+    assert m4_kwargs["messages"].role == "user"
+    assert m4_kwargs["messages"].content == content
+    assert m4_kwargs.get("history", None) is None
+
+    assert res.id == msg.id
+    assert res.conversation_id == msg.conversation_id
+    assert res.role == msg.role
+    assert res.content == msg.content
 
 
 @pytest.mark.asyncio
-async def test_update_conversation_title(
-    conversation_1,
+async def test_get_conversation_1(
+    mocker: Mocker,
 ) -> None:
+    conv = Conversation(
+        id=str(uuid7()),
+        owner_id=TEST_OWNER_ID,
+        title=str(uuid7()),
+    )
+    m = mocker.patch(
+        "prontia.db.cosmosdb.get_conversation",
+        return_value=conv,
+    )
+
+    res = await target.get_conversation(
+        id=conv.id,
+        owner_id=TEST_OWNER_ID,
+    )
+
+    assert m.call_count == 1
+    m.assert_called_with(
+        id=conv.id,
+        owner_id=TEST_OWNER_ID,
+    )
+    assert res.id == conv.id
+    assert res.owner_id == conv.owner_id
+    assert res.title == conv.title
+
+
+@pytest.mark.asyncio
+async def test_get_conversation_2(
+    mocker: Mocker,
+) -> None:
+    conv = Conversation(
+        id=str(uuid7()),
+        owner_id=TEST_OWNER_ID,
+        title=str(uuid7()),
+    )
+    m = mocker.patch(
+        "prontia.db.cosmosdb.get_conversation",
+        return_value=None,
+    )
+
+    with pytest.raises(ValueError):
+        await target.get_conversation(
+            id=conv.id,
+            owner_id=TEST_OWNER_ID,
+        )
+
+    assert m.call_count == 1
+    m.assert_called_with(
+        id=conv.id,
+        owner_id=TEST_OWNER_ID,
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_conversation_title_1(
+    mocker: Mocker,
+) -> None:
+    conv = Conversation(
+        id=str(uuid7()),
+        owner_id=TEST_OWNER_ID,
+        title=str(uuid7()),
+    )
     title = str(uuid7())
-    req = UpdateConversationRequest(
-        id=conversation_1.id,
+    conv2 = Conversation(
+        id=conv.id,
+        owner_id=conv.owner_id,
         title=title,
     )
+    m1 = mocker.patch(
+        "prontia.db.cosmosdb.get_conversation",
+        return_value=conv,
+    )
+    m2 = mocker.patch(
+        "prontia.db.cosmosdb.upsert_conversation",
+        return_value=conv2,
+    )
+
     res = await target.update_conversation_title(
         owner_id=TEST_OWNER_ID,
-        request=req,
+        id=conv.id,
+        title=title,
     )
+    assert m1.call_count == 1
+    m1.assert_called_with(
+        id=conv.id,
+        owner_id=TEST_OWNER_ID,
+    )
+    assert m2.call_count == 1
+    _, m2_kwargs = m2.call_args
+    assert m2_kwargs["conversation"].id == conv.id
+    assert m2_kwargs["conversation"].owner_id == conv.owner_id
+    assert m2_kwargs["conversation"].title == title
 
-    assert res.id == conversation_1.id
+    assert res.id == conv.id
+    assert res.owner_id == TEST_OWNER_ID
     assert res.title == title
 
-    conv = await db.get_conversation(
-        id=res.id,
-        owner_id=TEST_OWNER_ID,
-    )
-
-    assert conv is not None
-    assert conv.id == conversation_1.id
-    assert conv.owner_id == TEST_OWNER_ID
-    assert conv.title != conversation_1.title
-    assert conv.title == title
-    assert conv.created_at == conversation_1.created_at
-    assert conv.updated_at != conversation_1.updated_at
-    assert conv.updated_at > conversation_1.updated_at
-    assert conv.deleted_at is None
-
 
 @pytest.mark.asyncio
-async def test_delete_conversation(
-    conversation_2,
+async def test_delete_conversation_1(
+    mocker: Mocker,
 ) -> None:
-    req = ConversationRequest(
-        id=conversation_2.id,
+    conv = Conversation(
+        id=str(uuid7()),
+        owner_id=TEST_OWNER_ID,
+        title=str(uuid7()),
     )
+    msg1 = Message(
+        id=str(uuid7()),
+        owner_id=TEST_OWNER_ID,
+        conversation_id=conv.id,
+        role=str(uuid7()),
+        content=str(uuid7()),
+    )
+    msg2 = Message(
+        id=str(uuid7()),
+        owner_id=TEST_OWNER_ID,
+        conversation_id=conv.id,
+        role=str(uuid7()),
+        content=str(uuid7()),
+    )
+
+    m1 = mocker.patch(
+        "prontia.db.cosmosdb.get_conversation",
+        return_value=conv,
+    )
+    m2 = mocker.patch(
+        "prontia.db.cosmosdb.delete_conversation",
+    )
+    m3 = mocker.patch(
+        "prontia.db.cosmosdb.get_messages",
+        return_value=[msg1, msg2],
+    )
+    m4 = mocker.patch(
+        "prontia.db.cosmosdb.delete_message",
+    )
+
     await target.delete_conversation(
         owner_id=TEST_OWNER_ID,
-        request=req,
+        id=conv.id,
     )
 
-    conv = await db.get_conversation(
-        id=conversation_2.id,
+    assert m1.call_count == 1
+    m1.assert_called_with(
+        id=conv.id,
         owner_id=TEST_OWNER_ID,
     )
-
-    assert conv is None
-
-    msgs = await db.get_messages(
-        owner_id=TEST_OWNER_ID,
-        conversation_id=conversation_2.id,
-    )
-
-    assert len(msgs) == 0
+    assert m2.call_count == 1
+    _, m2_kwargs = m2.call_args
+    assert m2_kwargs["conversation"].id == conv.id
+    assert m2_kwargs["conversation"].owner_id == conv.owner_id
+    assert m3.call_count == 1
+    _, m3_kwargs = m3.call_args
+    assert m3_kwargs["owner_id"] == TEST_OWNER_ID
+    assert m3_kwargs["conversation_id"] == conv.id
+    assert m4.call_count == 2
+    m4_args = m4.call_args_list
+    _, m4_kwargs = m4_args[0]
+    assert m4_kwargs["message"].id == msg1.id
+    assert m4_kwargs["message"].owner_id == msg1.owner_id
+    assert m4_kwargs["message"].conversation_id == msg1.conversation_id
+    _, m4_kwargs = m4_args[1]
+    assert m4_kwargs["message"].id == msg2.id
+    assert m4_kwargs["message"].owner_id == msg2.owner_id
+    assert m4_kwargs["message"].conversation_id == msg2.conversation_id
 
 
 @pytest.mark.asyncio
-async def test_get_conversation_messages(
-    conversation_2,
+async def test_delete_conversation_2(
+    mocker: Mocker,
 ) -> None:
-    req = MessageRequest(
-        conversation_id=conversation_2.id,
+    mocker.patch(
+        "prontia.db.cosmosdb.get_conversation",
+        return_value=None,
     )
+
+    with pytest.raises(ValueError):
+        await target.get_conversation(
+            id=str(uuid7()),
+            owner_id=TEST_OWNER_ID,
+        )
+
+
+@pytest.mark.asyncio
+async def test_get_conversation_messages_1(
+    mocker: Mocker,
+) -> None:
+    conv_id = str(uuid7())
+    msg1 = Message(
+        id=str(uuid7()),
+        owner_id=TEST_OWNER_ID,
+        conversation_id=conv_id,
+        role=str(uuid7()),
+        content=str(uuid7()),
+    )
+    msg2 = Message(
+        id=str(uuid7()),
+        owner_id=TEST_OWNER_ID,
+        conversation_id=conv_id,
+        role=str(uuid7()),
+        content=str(uuid7()),
+    )
+    m = mocker.patch(
+        "prontia.db.cosmosdb.get_messages",
+        return_value=[msg1, msg2],
+    )
+
     msgs = await target.get_conversation_messages(
         owner_id=TEST_OWNER_ID,
-        request=req,
+        id=conv_id,
+    )
+
+    assert m.call_count == 1
+    m.assert_called_with(
+        owner_id=TEST_OWNER_ID,
+        conversation_id=conv_id,
     )
 
     assert len(msgs) == 2
-    for msg in msgs:
-        assert msg.id is not None
-        assert msg.conversation_id == conversation_2.id
-        assert msg.role is not None
-        assert msg.content is not None
+    assert msgs[0].id == msg1.id
+    assert msgs[0].owner_id == msg1.owner_id
+    assert msgs[0].conversation_id == msg1.conversation_id
+    assert msgs[0].role == msg1.role
+    assert msgs[0].content == msg1.content
+    assert msgs[1].id == msg2.id
+    assert msgs[1].owner_id == msg2.owner_id
+    assert msgs[1].conversation_id == msg2.conversation_id
+    assert msgs[1].role == msg2.role
+    assert msgs[1].content == msg2.content
 
 
 @pytest.mark.asyncio
-async def test_completion_messages(
-    conversation_2,
+async def test_completion_messages_1(
+    mocker: Mocker,
 ) -> None:
-    req = CompletionMessageRequest(
-        conversation_id=conversation_2.id,
-        content="私のIDは何ですか？",
+    conv_id = str(uuid7())
+    msg1 = Message(
+        id=str(uuid7()),
+        owner_id=TEST_OWNER_ID,
+        conversation_id=conv_id,
+        role=str(uuid7()),
+        content=str(uuid7()),
     )
+    msg2 = Message(
+        id=str(uuid7()),
+        owner_id=TEST_OWNER_ID,
+        conversation_id=conv_id,
+        role=str(uuid7()),
+        content=str(uuid7()),
+    )
+    content = str(uuid7())
+    res_msg = Message(
+        id=str(uuid7()),
+        owner_id=TEST_OWNER_ID,
+        conversation_id=conv_id,
+        role=str(uuid7()),
+        content=content,
+    )
+
+    m1 = mocker.patch(
+        "prontia.db.cosmosdb.get_messages",
+        return_value=[msg1, msg2],
+    )
+    m2 = mocker.patch(
+        "prontia.services.openai.completion",
+        return_value=res_msg,
+    )
+    m3 = mocker.patch(
+        "prontia.db.cosmosdb.upsert_message",
+        return_value=res_msg,
+    )
+
     msg = await target.completion_messages(
         owner_id=TEST_OWNER_ID,
-        request=req,
+        id=conv_id,
+        content=content,
     )
 
-    assert msg.id is not None
-    assert msg.conversation_id == conversation_2.id
-    assert msg.role == "assistant"
-    assert msg.content != ""
-
-    msgs = await db.get_messages(
+    assert m1.call_count == 1
+    m1.assert_called_with(
         owner_id=TEST_OWNER_ID,
-        conversation_id=conversation_2.id,
+        conversation_id=conv_id,
     )
+    assert m2.call_count == 1
+    _, m2_kwargs = m2.call_args
+    assert m2_kwargs["owner_id"] == TEST_OWNER_ID
+    assert m2_kwargs["conversation_id"] != ""
+    assert m2_kwargs["messages"].owner_id == TEST_OWNER_ID
+    assert m2_kwargs["messages"].conversation_id == conv_id
+    assert m2_kwargs["messages"].role == "user"
+    assert m2_kwargs["messages"].content == content
+    assert m2_kwargs["history"][0].id == msg1.id
+    assert m2_kwargs["history"][0].owner_id == TEST_OWNER_ID
+    assert m2_kwargs["history"][0].conversation_id == conv_id
+    assert m2_kwargs["history"][0].role == msg1.role
+    assert m2_kwargs["history"][0].content == msg1.content
+    assert m2_kwargs["history"][1].id == msg2.id
+    assert m2_kwargs["history"][1].owner_id == msg2.owner_id
+    assert m2_kwargs["history"][1].conversation_id == conv_id
+    assert m2_kwargs["history"][1].role == msg2.role
+    assert m2_kwargs["history"][1].content == msg2.content
+    assert m3.call_count == 1
+    _, m3_kwargs = m3.call_args
+    assert m3_kwargs["message"].id == res_msg.id
+    assert m3_kwargs["message"].owner_id == TEST_OWNER_ID
+    assert m3_kwargs["message"].conversation_id == conv_id
+    assert m3_kwargs["message"].role == res_msg.role
+    assert m3_kwargs["message"].content == res_msg.content
 
-    assert len(msgs) == 3
-    for msg in msgs:
-        assert msg.id is not None
-        assert msg.conversation_id == conversation_2.id
-        assert msg.role is not None
-        assert msg.content is not None
+    assert msg.id == res_msg.id
+    assert msg.owner_id == TEST_OWNER_ID
+    assert msg.conversation_id == conv_id
+    assert msg.role == res_msg.role
+    assert msg.content == res_msg.content

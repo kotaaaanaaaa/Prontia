@@ -47,7 +47,7 @@ async def test_basic_conversation() -> None:
     assert read.updated_at == create.updated_at
 
     await target.delete_conversation(
-        converation=create,
+        conversation=create,
     )
 
     read = await target.get_conversation(
