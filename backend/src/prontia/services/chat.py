@@ -128,7 +128,7 @@ async def get_conversation_messages(
     return msgs
 
 
-async def completion_messages(
+async def completion_message(
     owner_id: str,
     id: str,
     content: str,

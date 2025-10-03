@@ -447,7 +447,7 @@ async def test_completion_messages_1(
         return_value=res_msg,
     )
 
-    msg = await target.completion_messages(
+    msg = await target.completion_message(
         owner_id=TEST_OWNER_ID,
         id=conv_id,
         content=content,
