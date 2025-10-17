@@ -16,7 +16,7 @@ import {
   ThemeProvider,
 } from "@mui/material/styles";
 import * as React from "react";
-import { SideMenuTheme } from "./Theme";
+import { SideMenuTheme } from "./SideMenuTheme";
 
 type SvgIconComponent = OverridableComponent<SvgIconTypeMap<{}, "svg">>;
 
