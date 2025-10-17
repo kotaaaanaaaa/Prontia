@@ -2,5 +2,4 @@
     "files.exclude": {
         "**/__pycache__": true
     },
-    "editor.formatOnSave": true
 }
