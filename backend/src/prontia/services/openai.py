@@ -1,8 +1,6 @@
 from openai import AzureOpenAI
 from openai.types.chat import ChatCompletion
 from uuid6 import uuid7
-from typing import List
-
 from prontia.core.settings import settings
 from prontia.models.prompt import Prompt, PromptContent
 from prontia.models.message import Message
@@ -12,12 +10,14 @@ async def completion(
     owner_id: str,
     conversation_id: str,
     messages: Message,
-    history: List[Message] = [],
+    history: list[Message] | None = None,
 ) -> Message:
     system = get_system_prompt()
     msgs = [system]
 
-    for msg in history[-5:]:
+    history_items = history or []
+
+    for msg in history_items[-5:]:
         msgs.append(to_prompt(msg))
     msgs.append(to_prompt(messages))
 
@@ -39,7 +39,7 @@ async def completion(
 
 
 def create_completion(
-    messages: List[Prompt],
+    messages: list[Prompt],
 ) -> ChatCompletion:
     client = AzureOpenAI(
         azure_endpoint=settings.openai.ENDPOINT,
