@@ -5,7 +5,9 @@ import Stack from "@mui/material/Stack";
 import { ThemeProvider } from "@mui/material/styles";
 import ChatInputTheme from "./ChatInputTheme";
 
-const ChatInputMenu: React.FC = () => {
+const ChatInputMenu: React.FC<{
+  onClickSend: () => void;
+}> = ({ onClickSend }) => {
   return (
     <div className="chat-input-menu">
       <ThemeProvider theme={ChatInputTheme}>
@@ -16,7 +18,7 @@ const ChatInputMenu: React.FC = () => {
             </IconButton>
           </Stack>
           <Stack direction="row" justifyContent="flex-end" width="100%">
-            <IconButton>
+            <IconButton onClick={onClickSend}>
               <SendIcon />
             </IconButton>
           </Stack>
