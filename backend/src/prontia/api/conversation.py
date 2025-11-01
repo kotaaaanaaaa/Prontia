@@ -16,7 +16,7 @@ from prontia.services import chat as service
 router = APIRouter(prefix="/conversations")
 
 
-@router.get("/")
+@router.get("")
 async def get_histories(
     owner_id=Depends(get_user),
 ) -> List[ConversationResponse]:
@@ -61,7 +61,7 @@ async def delete_conversation(
     )
 
 
-@router.get("/{id}/messages/")
+@router.get("/{id}/messages")
 async def get_conversation_messages(
     id: str,
     owner_id=Depends(get_user),
@@ -82,7 +82,7 @@ async def get_conversation_messages(
     return res
 
 
-@router.post("/message/")
+@router.post("/message")
 async def start_conversation(
     req: StartConversationRequest,
     owner_id=Depends(get_user),
@@ -101,7 +101,7 @@ async def start_conversation(
     return res
 
 
-@router.post("/{id}/message/")
+@router.post("/{id}/message")
 async def send_question(
     id: str,
     req: QuestionRequest,

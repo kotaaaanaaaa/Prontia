@@ -161,7 +161,7 @@ def test_start_conversation_1(
     )
 
     res = client.post(
-        "/conversations/message/",
+        "/conversations/message",
         headers={"X-Token": "coneofsilence"},
         json={
             "content": content,
@@ -195,7 +195,7 @@ def test_send_question_1(
     )
 
     m = mocker.patch(
-        "prontia.services.chat.completion_messages",
+        "prontia.services.chat.completion_message",
         return_value=msg,
     )
 
