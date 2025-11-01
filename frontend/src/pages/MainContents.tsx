@@ -1,5 +1,5 @@
 import type * as React from "react";
-import Chat from "./Chat";
+import Chat from "../pages/Chat";
 
 const MainContents: React.FC<{ open: boolean }> = ({ open }) => {
   return (

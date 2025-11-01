@@ -1,6 +1,6 @@
 import Stack from "@mui/material/Stack";
-import ChatConversation from "./ChatConversation";
-import ChatInput from "./ChatInput";
+import ChatConversation from "../components/Chat/ChatConversation";
+import ChatInput from "../components/Chat/ChatInput";
 
 const Chat: React.FC = () => {
   return (

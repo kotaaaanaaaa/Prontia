@@ -1,7 +1,7 @@
 import "./App.css";
 import * as React from "react";
-import MainContents from "./MainContents";
-import SideMenu from "./SideMenu";
+import SideMenu from "./components/SideMenu/SideMenu";
+import MainContents from "./pages/MainContents";
 
 function App() {
   const [open, setOpen] = React.useState(true);
