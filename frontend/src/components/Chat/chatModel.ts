@@ -1,16 +1,16 @@
 export class Question {
   id: string;
   content: string;
-  constructor(content: string) {
-    this.id = crypto.randomUUID();
+  constructor(id: string, content: string) {
+    this.id = id;
     this.content = content;
   }
 }
 export class Response {
   id: string;
   content: string;
-  constructor(content: string) {
-    this.id = crypto.randomUUID();
+  constructor(id: string, content: string) {
+    this.id = id;
     this.content = content;
   }
 }

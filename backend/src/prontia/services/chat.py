@@ -19,7 +19,7 @@ async def get_histories(
 async def start_conversation(
     owner_id: str,
     content: str,
-) -> Message:
+) -> tuple[Message, Message]:
     id = str(uuid7())
     title = await openai.generate_title(
         content=content,
@@ -29,7 +29,7 @@ async def start_conversation(
         owner_id=owner_id,
         title=title,
     )
-    req_msg = Message(
+    req = Message(
         id=str(uuid7()),
         owner_id=owner_id,
         conversation_id=conv.id,
@@ -41,19 +41,19 @@ async def start_conversation(
         conversation=conv,
     )
     await db.upsert_message(
-        message=req_msg,
+        message=req,
     )
 
     msg = await openai.completion(
         owner_id=owner_id,
         conversation_id=conv.id,
-        messages=req_msg,
+        messages=req,
     )
 
     res = await db.upsert_message(
         message=msg,
     )
-    return res
+    return req, res
 
 
 async def get_conversation(
@@ -132,12 +132,12 @@ async def completion_message(
     owner_id: str,
     id: str,
     content: str,
-) -> Message:
+) -> tuple[Message, Message]:
     msgs = await db.get_messages(
         owner_id=owner_id,
         conversation_id=id,
     )
-    req_msg = Message(
+    req = Message(
         id=str(uuid7()),
         owner_id=owner_id,
         conversation_id=id,
@@ -145,14 +145,14 @@ async def completion_message(
         content=content,
     )
 
-    res_msg = await openai.completion(
+    res = await openai.completion(
         owner_id=owner_id,
         conversation_id=id,
-        messages=req_msg,
+        messages=req,
         history=msgs,
     )
 
     await db.upsert_message(
-        message=res_msg,
+        message=res,
     )
-    return res_msg
+    return req, res

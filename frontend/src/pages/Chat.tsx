@@ -9,10 +9,11 @@ const Chat: React.FC = () => {
   const [conv, setConv] = React.useState<Message[]>([]);
 
   const send = async (message: string) => {
-    const q = new Question(message);
+    const q = new Question(crypto.randomUUID(), message);
     setConv((prev) => [...prev, q]);
     const res = await sendMessage(message);
-    const r = new Response(res.content);
+    q.id = res.req_id;
+    const r = new Response(res.id, res.content);
     setConv((prev) => [...prev, r]);
   };
 

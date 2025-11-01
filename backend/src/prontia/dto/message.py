@@ -6,3 +6,6 @@ class MessageResponse(BaseModel):
     conversation_id: str
     role: str
     content: str
+
+class QuestionResponse(MessageResponse):
+    req_id: str

@@ -131,7 +131,7 @@ async def test_start_conversation_1(
         return_value=msg,
     )
 
-    res = await target.start_conversation(
+    req, res = await target.start_conversation(
         owner_id=TEST_OWNER_ID,
         content=content,
     )
@@ -170,6 +170,11 @@ async def test_start_conversation_1(
     assert res.conversation_id == msg.conversation_id
     assert res.role == msg.role
     assert res.content == msg.content
+
+    assert req.id != msg.id
+    assert req.conversation_id != msg.conversation_id
+    assert req.role == "user"
+    assert req.content == content
 
 
 @pytest.mark.asyncio
@@ -447,7 +452,7 @@ async def test_completion_messages_1(
         return_value=res_msg,
     )
 
-    msg = await target.completion_message(
+    req, res = await target.completion_message(
         owner_id=TEST_OWNER_ID,
         id=conv_id,
         content=content,
@@ -484,8 +489,14 @@ async def test_completion_messages_1(
     assert m3_kwargs["message"].role == res_msg.role
     assert m3_kwargs["message"].content == res_msg.content
 
-    assert msg.id == res_msg.id
-    assert msg.owner_id == TEST_OWNER_ID
-    assert msg.conversation_id == conv_id
-    assert msg.role == res_msg.role
-    assert msg.content == res_msg.content
+    assert res.id == res_msg.id
+    assert res.owner_id == TEST_OWNER_ID
+    assert res.conversation_id == conv_id
+    assert res.role == res_msg.role
+    assert res.content == res_msg.content
+
+    assert req.id != res_msg.id
+    assert req.owner_id == TEST_OWNER_ID
+    assert req.conversation_id == conv_id
+    assert req.role == "user"
+    assert req.content == content

@@ -8,6 +8,7 @@ from uuid6 import uuid7
 from prontia.app import app
 from prontia.dto.conversation import ConversationResponse
 from prontia.dto.message import MessageResponse
+from prontia.dto.message import QuestionResponse
 from prontia.models.conversation import Conversation
 from prontia.models.message import Message
 from prontia.services.user import DEFAULT_USER_ID
@@ -174,7 +175,7 @@ def test_start_conversation_1(
         owner_id=DEFAULT_USER_ID,
         content=content,
     )
-    expect = MessageResponse(
+    expect = QuestionResponse(
         **msg.model_dump(),
     ).model_dump()
     assert res.json() == expect
@@ -213,7 +214,7 @@ def test_send_question_1(
         id=id,
         content=content,
     )
-    expect = MessageResponse(
+    expect = QuestionResponse(
         **msg.model_dump(),
     ).model_dump()
     assert res.json() == expect

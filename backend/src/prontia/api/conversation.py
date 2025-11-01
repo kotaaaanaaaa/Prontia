@@ -7,6 +7,7 @@ from prontia.dto.conversation import (
     QuestionRequest,
 )
 from prontia.dto.message import (
+    QuestionResponse,
     MessageResponse,
 )
 from prontia.services.user import get_user
@@ -86,17 +87,18 @@ async def get_conversation_messages(
 async def start_conversation(
     req: StartConversationRequest,
     owner_id=Depends(get_user),
-) -> MessageResponse:
-    msg = await service.start_conversation(
+) -> QuestionResponse:
+    req_msg, res_msg = await service.start_conversation(
         owner_id=owner_id,
         content=req.content,
     )
 
-    res = MessageResponse(
-        id=msg.id,
-        conversation_id=msg.conversation_id,
-        role=msg.role,
-        content=msg.content,
+    res = QuestionResponse(
+        id=res_msg.id,
+        req_id=req_msg.id,
+        conversation_id=res_msg.conversation_id,
+        role=res_msg.role,
+        content=res_msg.content,
     )
     return res
 
@@ -106,16 +108,17 @@ async def send_question(
     id: str,
     req: QuestionRequest,
     owner_id=Depends(get_user),
-) -> MessageResponse:
-    msg = await service.completion_message(
+) -> QuestionResponse:
+    req_msg, res_msg = await service.completion_message(
         owner_id=owner_id,
         id=id,
         content=req.content,
     )
-    res = MessageResponse(
-        id=msg.id,
-        conversation_id=msg.conversation_id,
-        role=msg.role,
-        content=msg.content,
+    res = QuestionResponse(
+        id=res_msg.id,
+        req_id=req_msg.id,
+        conversation_id=res_msg.conversation_id,
+        role=res_msg.role,
+        content=res_msg.content,
     )
     return res
