@@ -1,4 +1,4 @@
-import type { MessageResponse } from "./dto";
+import type { ConversationResponse, MessageResponse } from "./dto";
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -32,5 +32,16 @@ export async function sendMessage(
     });
   }
   const result: MessageResponse = await res.json();
+  return result;
+}
+
+export async function fetchHistory() {
+  const res = await fetch(`${API_BASE_URL}/conversations`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  const result: ConversationResponse[] = await res.json();
   return result;
 }
