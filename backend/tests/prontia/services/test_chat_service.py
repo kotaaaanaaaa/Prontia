@@ -481,8 +481,15 @@ async def test_completion_messages_1(
     assert m2_kwargs["history"][1].conversation_id == conv_id
     assert m2_kwargs["history"][1].role == msg2.role
     assert m2_kwargs["history"][1].content == msg2.content
-    assert m3.call_count == 1
-    _, m3_kwargs = m3.call_args
+    assert m3.call_count == 2
+    m3_args = m3.call_args_list
+    _, m3_kwargs = m3_args[0]
+    assert m3_kwargs["message"].id != res_msg.id
+    assert m3_kwargs["message"].owner_id == TEST_OWNER_ID
+    assert m3_kwargs["message"].conversation_id == conv_id
+    assert m3_kwargs["message"].role == "user"
+    assert m3_kwargs["message"].content == content
+    _, m3_kwargs = m3_args[1]
     assert m3_kwargs["message"].id == res_msg.id
     assert m3_kwargs["message"].owner_id == TEST_OWNER_ID
     assert m3_kwargs["message"].conversation_id == conv_id

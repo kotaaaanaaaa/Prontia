@@ -9,7 +9,7 @@ export async function sendMessage(
   let res: Response;
   if (conversationId) {
     res = await fetch(
-      `${API_BASE_URL}/conversations/${conversationId}/messages`,
+      `${API_BASE_URL}/conversations/${conversationId}/message`,
       {
         method: "POST",
         headers: {
@@ -43,5 +43,19 @@ export async function fetchHistory() {
     },
   });
   const result: ConversationResponse[] = await res.json();
+  return result;
+}
+
+export async function fetchMessages(conversationId: string) {
+  const res = await fetch(
+    `${API_BASE_URL}/conversations/${conversationId}/messages`,
+    {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    },
+  );
+  const result: MessageResponse[] = await res.json();
   return result;
 }

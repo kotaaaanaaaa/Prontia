@@ -1,8 +1,9 @@
 import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
+import ListItemText from "@mui/material/ListItemText";
 import { ThemeProvider } from "@mui/material/styles";
 import * as React from "react";
+import { Link } from "react-router";
 import { fetchHistory } from "../../api/chat";
 import type { ConversationResponse } from "../../api/dto";
 import { HistoryTheme } from "./HistoryTheme";
@@ -16,8 +17,12 @@ const History: React.FC = () => {
       <ThemeProvider theme={HistoryTheme}>
         <List>
           {history.map((item) => (
-            <ListItemButton key={item.id}>
-              <ListItem>{item.title}</ListItem>
+            <ListItemButton
+              key={item.id}
+              component={Link}
+              to={`/chat/${item.id}`}
+            >
+              <ListItemText primary={item.title} />
             </ListItemButton>
           ))}
         </List>

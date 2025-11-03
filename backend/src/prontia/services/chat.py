@@ -145,6 +145,10 @@ async def completion_message(
         content=content,
     )
 
+    await db.upsert_message(
+        message=req,
+    )
+
     res = await openai.completion(
         owner_id=owner_id,
         conversation_id=id,

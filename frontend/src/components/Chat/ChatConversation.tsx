@@ -4,7 +4,9 @@ import ChatQuestion from "./ChatQuestion";
 import ChatResponse from "./ChatResponse";
 import { type Message, Question, Response } from "./chatModel";
 
-const ChatConversation: React.FC<{ messages: Message[] }> = ({ messages }) => {
+const ChatConversation: React.FC<{
+  messages: Message[];
+}> = ({ messages }) => {
   return (
     <Stack spacing={1}>
       {messages.map((item) => {

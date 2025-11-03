@@ -100,7 +100,7 @@ const SideMenu: React.FC<{
       <ThemeProvider theme={SideMenuTheme}>
         <MenuExpander open={open} onExpand={onExpand} />
         <MainMenu expand={expand} />
-        <History />
+        {expand && <History />}
       </ThemeProvider>
     </SideMenuDrawer>
   );

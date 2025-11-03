@@ -1,5 +1,6 @@
 import "./App.css";
 import * as React from "react";
+import { BrowserRouter, Route, Routes } from "react-router";
 import SideMenu from "./components/SideMenu/SideMenu";
 import MainContents from "./pages/MainContents";
 
@@ -13,8 +14,28 @@ function App() {
         justifyContent: "center",
       }}
     >
-      <SideMenu open={open} setOpen={setOpen} />
-      <MainContents open={open} />
+      <BrowserRouter>
+        <Routes>
+          <Route
+            index
+            element={
+              <>
+                <SideMenu open={open} setOpen={setOpen} />
+                <MainContents open={open} />
+              </>
+            }
+          />
+          <Route
+            path="/chat/:id"
+            element={
+              <>
+                <SideMenu open={open} setOpen={setOpen} />
+                <MainContents open={open} />
+              </>
+            }
+          />
+        </Routes>
+      </BrowserRouter>
     </div>
   );
 }
